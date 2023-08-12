@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ollama-model-downloader
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 60  # Job will be deleted 1 min after completion
+  template:
+    spec:
+      containers:
+      - name: ollama-model-downloader
+        image: ghcr.io/denverdino/ollama-model-downloader:v1
+        env:
+        - name: OLLAMA_MODELS
+          value: /ollama-models
+        args:
+        - deepseek-r1:32b
+        volumeMounts:
+          - name: ollama-models
+            mountPath: "/ollama-models"
+      restartPolicy: OnFailure
+      volumes:
+      - name: ollama-models
+        persistentVolumeClaim:
+          claimName: ollama-pvc-oss

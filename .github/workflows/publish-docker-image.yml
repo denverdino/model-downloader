@@ -1,0 +1,75 @@
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+# GitHub recommends pinning actions to a commit SHA.
+# To get a newer version, you will need to update the SHA.
+# You can also reference a tag or branch, but the action may change without warning.
+
+name: Publish Docker image
+
+on:
+  push:
+    branches:
+      - main
+  pull_request: {}
+  workflow_dispatch: {}
+jobs:
+  push_to_registry:
+    name: Push Docker image to Docker Hub
+    runs-on: ubuntu-latest
+
+    permissions:
+      packages: write
+      contents: read
+
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v3
+      
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+      
+      - name: 'Login to GitHub Container Registry'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker image for Alibaba Cloud Helper
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: |
+            denverdino/alibaba-cloud-helper:v1
+            ghcr.io/denverdino/alibaba-cloud-helper:v1
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push Docker image for Model Downloader
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./model-downloader.Dockerfile
+          push: true
+          tags: |
+            denverdino/model-downloader:v1
+            ghcr.io/denverdino/model-downloader:v1
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Build and push Docker image for Ollama Model Downloader
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./ollama-model-downloader.Dockerfile
+          push: true
+          tags: |
+            denverdino/ollama-model-downloader:v1
+            ghcr.io/denverdino/ollama-model-downloader:v1
+          labels: ${{ steps.meta.outputs.labels }}

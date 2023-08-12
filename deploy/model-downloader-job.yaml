@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: model-downloader
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 60  # Job will be deleted 1 min after completion
+  template:
+    spec:
+      containers:
+      - name: model-downloader
+        image: ghcr.io/denverdino/model-downloader:v1
+        imagePullPolicy: Always
+        env:
+        - name: HF_ENDPOINT
+          value: "" # "https://hf-mirror.com"
+        - name: MODEL_NAME
+          value: "deepseek-ai/DeepSeek-R1-Distill-Qwen-14B"
+        - name: HF_HOME
+          value: "/huggingface"
+        - name: TARGET_CACHE
+          value: "/oss-cache"
+        resources:
+          requests:
+            cpu: "2"
+            memory: "8Gi"
+        volumeMounts:
+        - name: hf-home
+          mountPath: "/huggingface"
+        - name: hf-models
+          mountPath: "/oss-cache"
+      restartPolicy: OnFailure
+      volumes:
+      - name: hf-models
+        persistentVolumeClaim:
+          claimName: hf-pvc-oss
+      - name: hf-home
+        ephemeral:
+          volumeClaimTemplate:
+            metadata:
+              labels:
+                type: hf-home
+            spec:
+              accessModes: [ "ReadWriteOncePod" ]
+              storageClassName: alicloud-disk-topology-alltype
+              resources:
+                requests:
+                  storage: 40Gi
